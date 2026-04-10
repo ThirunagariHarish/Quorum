@@ -76,7 +76,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.post("/setup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/setup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def setup(body: SetupRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(func.count()).select_from(User))
     count = result.scalar_one()
@@ -95,5 +95,12 @@ async def setup(body: SetupRequest, db: AsyncSession = Depends(get_db)):
     await db.flush()
     await db.refresh(user)
 
+    access_token = create_access_token(str(user.id))
+    refresh_token = create_refresh_token(str(user.id))
     logger.info("initial_setup", user_id=str(user.id), email=user.email)
-    return user
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=86400,
+    )
