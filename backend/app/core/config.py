@@ -19,7 +19,11 @@ class Settings(BaseSettings):
 
     ANTHROPIC_API_KEY: str = ""
 
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "https://paperpilotapp.com",
+        "https://www.paperpilotapp.com",
+    ]
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
