@@ -64,9 +64,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
-    environment:
-      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://187.124.77.249:8000}
-      NEXT_PUBLIC_WS_URL: ${PUBLIC_WS_URL:-ws://187.124.77.249:8000}
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://187.124.77.249}
+        NEXT_PUBLIC_WS_URL: ${PUBLIC_WS_URL:-ws://187.124.77.249}
     depends_on:
       - backend
     restart: unless-stopped
