@@ -1,0 +1,240 @@
+Medium Research Builder
+so I want to discuss a project implementation idea so the project is like so right now I am into research so there is a niche for me there is topics that I will talk about the niche later but mostly the niche gonna be like block chain and autonomous vehicle transportation right like how we can integrate the block chain with autonomous vehicles either through reward system or like more ideas around block chain and autonomous vehicle so that's my research right it's gonna be for safety it's gonna be for fully autonomous and how we can integrate these two platforms right now we also have AI so in these three topics I have not still specifically decided my niche but it's around these three topics so the project that I am building is it's like it's gonna write it's gonna research about all of this hot news hot topics hot research papers around these areas right so what I'm trying to vision is so let's say I have three agents running and it's like team of agents right I have a higher like team of research agents each researching on specific topic and specific outcome so the niche gonna be common so there is one agent whose job is constantly looking for what's trending in these areas combined and what are the new research papers that are out there what are the new white papers that are out there small papers and it's gonna research it's gonna daily every hour it's gonna wake up The agent, and it's gonna research and, uh, then it's gonna give those topics to the three sub-agents. So, the three sub-agents are one, uh, one agent is specifically focusing on IEEE papers and, uh, it's gonna take all of the inputs from, uh, primary agent, right? It's gonna, it's gonna give all the, uh, latest and, uh, hot, hot- hot topic like it's gonna select one or three topics about the IEEE small papers and medium articles and it's going to send the primary agent is going to send to user through telegram or whatsapp and once the user decides which which topics he wants to write IEEE small papers or medium articles right? And once user confirms. And let's say user come confirms on one specific topic of IEEE paper then that that agent the primary agent is going to wake up IEEE agent. So the job of IEEE agent is to extend this paper or if there is no talk if if it's just a topic it's gonna do a thorough research like hours of research right? I wanted to do through go through all articles and uh, it should the agent configuration should be already set up right? It should know what are IEEE rules how do how do we write i3p papers like what tools do we use like latex or what is the formatting when are the dates of submission it's gonna pull all of those so the primary agent is gonna it's gonna give the task based on new date also so they Agent responsibilities to check that you did. What are the papers that we can publish? It already had the paper So it's gonna spawn like multiple ages like five to six sub agents each gonna research on one topic so based on the primary paper, it's it's gonna think like What I can extend from these papers so there will be five to six top ideas right and the subway and the five to six up agents going to start thinking about what I can write what I can extend how it gets research right so it's going to take a paper and extend the research and write another paper. It's gonna maintain the differences but for the paper will be done by me. So, the agent, the author will be me but the agent is going to write the paper. So, in that way, 5-6 sub-agent gonna write their entire paper. and it should follow all the IEEE rules, it should not be plagiarism safe, right? You should not use the same paper to write it. It's like we are researching, inventing something new, we are extending. Let's take a simple example, right? Let's say there is one IEEE paper on conversational search using XYZ, like tag or something. Then one agent gonna think that okay I will replace tag and then I'll try to use some other technology and then let's see the output. So it's gonna come up with data. It's like it has the whole sandbox. It does like a Phd kind of research right? And come up with outcomes and everything and then give the research paper as an output in expected format so the output would be always in latex for IEEE and the small papers. So the next agent is the small page, small paper agent. So this agent is already configured with all the routes of small paper and how do we write the small paper? What resources to be used? It knows everything so based on that it's gonna write a small paper as soon as a task is assigned by the private agent so let's call the primary agent as researcher and the sub-agent as IEEE agents small paper agent and the medium agent is gonna get a topic right? It won't get it will not get a what do you say IEEE papers small paper as input so it will get a topic and how I want IEEE medium papers to be written is, I want actual implementations in the medium papers so I see most of the medium papers are written like like an explanation right? I don't want to write explanation papers. So let's say someone says conversational topic is about autonomous vehicle using blockchain. I actually want you to implement it so start writing code as human write like a right like every project that medium article gets it's gonna write it in phase one part one part two part three so that it actually feels like someone is implementing this project and has written the project and the selection of the words should be more humanly possible. So these are all three configurations for three agents and the research agent should orchestrate all of these and there is such an agent is going to give he's gonna do this activity two times a day so it will start the agent first. It will start primary it will start in the morning and then it's gonna spin off these agents these agents could research for hours. It's gonna go through all of them and then it's gonna give the output output and output will be so far IEEE all of these outputs right they need to be sent to Gmail or select choose any other platform that is easy to send this document either its Dropbox or I prefer Gmail so that you can communicate and there is also reviewer agents right so once we spawn all of our these ideas in the sub-agents. So every everything all of these three agents will spawn multiple sub-agents giving them multiple sub tasks right so each sub task is not like part of main task so each sub task can result in one more paper so it's like I have an idea I want to follow like five ways of doing it so it's like five theories right so each sub agent is gonna work on those five theories and come up with an outcome. And then there will be a review agent for each IEEE there is a review agent for IEEE there is a review agent for small paper there is a review agent for medium articles. So once all the sub agents finished doing tasks they will be sent to review agent and review agents gonna review those if there's something wrong reviewer agency is gonna send it back it should happen like actual judging right so how it happens in outside world it should happen. So I want you to research all about I want you to completely understand about IEEE small papers and medium and I want you to create these three agents and then I want you to orchestrate everything in cloud. For these three so every every the research agent should get triggered in the morning and in the evening so that it runs daily twice daily and it's gonna start this sub-agent so that they research for hours and then come up with latex files and the medium researcher once it has the output files it sends them for review as soon as as I approve the review either to telegram or Gmail it should automatically publish it to medium account so there should be a place where I can or we can do one more thing right we can create a website where I can see all of these agents working and their articles so I am visioning this website as like a research research analyst website right where I see all of these three agents I can go to individual tab for these as agents at sub agency what they are working on so it's like home there is a home page which going to show all the files that have been created for these by these agents and there will be agents agents tab right and once I click agents tab it's gonna one tab will show all i triple e uh i triple events so when I click on it it's gonna show me what all files that I triple agents has created what data it has created and what the status of this agent what is it doing now so whenever I see the progress of this agent it should clearly tell me what paper it's working on what is the task it's working on similarly if I go to small vapor same thing it shows like there is a tab for all files so I can download those all files from there I can also preview the files from here from files from there and I should be able to review those files from there right if I if something is not correct I can give my comments on the file so it's Files tab, uh, for each agent. There is a, uh, current processing, uh, tab where it shows what's the-- what is working on, what is hi-- on a high level, right? What paper it is working on and all of those things. And then there's, there is a third tab, right? I can give the tasks, uh, to agent itself manually. You-- The-- I can ask it to work on something. Now, if you think abo- review process so as soon as there should be also a review tab right where I review each paper so there is a review tab when I click on it it will have again three tabs: IAAE all of those and it should have like three panels right one panel shows all the files that are written by this agent and when I click on a file it's going to open a middle panel with the document uh you i probably use document viewer for latex because the files are in latex and on the right side i can start adding multiple comments it's like notes right i just click add note and as as i read i click i give i start giving comments once i send feedback it should go through i AAAE agent task and it should implement that feedback and overwrite the file again so that once I keep reviewing the file and once i'm all good I can click all done thanks and then that file goes to the initial home tab or files tab right there is a files tab so review is different from files only whenever whenever a file passes my review it goes to different tabs so that I can identify it can be like approved for approved approved review right so that I'll download those files from upload review so title of the document should match with the with the paper topic and yeah this is what I'm visioning so everything should run on daily basis daily two times it should automatically run and once the output is there I can come to the site and then check you can also send me notifications so that it's easier for me to come back and check either you can send me a text message or whatsapp message that these files are review ready for review so that I can come come to this site and start reviewing this process so I want the website to be modern design and it should be lightweight probably built in react or which our framework you want use a good framework for CSS so that everything is seamless everything has like good process right and reviews and also the main problem would be the review right so as soon as I review I keep adding my comments and then I send it should go back to the agent agent queue and then once agent is ready it's gonna work on this feedback and send it back to me so the agent should also maintain the research research context until the file is uproot so that's the whole process project ambitioning can you build this whole project and give me so to start with right come up with PRD documents I want you to research thoroughly about these IEEE rules small paper rules what are the different tools that we need so we are building this agents in Claude Code right so we are using this agents as we are basically creating Claude Code agents and deploying it to a VPS instance and we deploy a website which controls this Claude Code instance it's gonna read from there so all of these agents need to be alive 24 by 7 working for me and I want you to thoroughly research so that these a these papers get submitted easy easily I want you to also research about hacks how we can submit this papers easily I want you to give me deadlines on the website right so for each paper that you wrote where are we targeting like which general are we targeting what are the dates you're gonna give me everything on the website so that it's easy for me I can just go and upload and submit the i3e papers also a setting panel alikada like a profile panel right where I can give you my my niche topics in a list and I can also connect connect to my Gmail not Gmail I can give you my Gmail or what sub settings there like connectors right so that you can notify me and I can also configure by medium a medium so that you can upload directly from for medium right there should be a button on medium agent saying I can select the file and click upload it's going to upload as medium article so I want you to thoroughly research how to write best medium articles like I said right I don't want to just discuss about topic on the medium article I actually want to implement something on the medium article like projects and put it like part one part two part three of those topics and then move on to next topic so research agent should also think about what are the best resources where it can search for latest trending topic so that I get more mentions of my of my papers and there should not be any sign that these articles are written by Claude Code it should be has human as possible and that's what I want and you should also generate images read architecture diagrams images so all of this Claude Code instance all these rules that you are researching you it needs to be embed in those agents so that agent doesn't skip those rules. Can you generate a detailed PRD document, come up with an architecture diagram, and come up with a UI design for the website? You can come up with your own research for all of these agent characters, rules, configurations, and everything.
+This website also needs cloud settings. As soon as I log in, I need to give my Anthropic key so that this website can start putting those Claude Code instances (I think, like cloud SDK agents). What else? Come up with a detailed implementation plan so that we can start this project. 
+
+
+1. PROJECT DESCRIPTION (Clear & Investor-Level)
+🧠 What You’re Building
+
+You are building an:
+
+Autonomous Multi-Agent Research & Publishing Platform
+that continuously discovers, researches, generates, reviews, and publishes high-quality technical content across:
+
+Blockchain
+Autonomous Vehicles
+AI Systems
+🔁 Core Workflow
+Trend Discovery → Topic Selection → Multi-Agent Research → Paper Generation
+→ Review Loop → Approval → Publish (IEEE / Medium) → Feedback Learning
+🤖 Agent Ecosystem (Your Core Innovation)
+🧭 1. Research Orchestrator (Primary Agent)
+Runs twice daily
+Finds:
+trending topics
+IEEE papers
+arXiv papers
+news + GitHub repos
+Assigns tasks to sub-agents
+📄 2. IEEE Research Agent
+Writes conference/journal-grade papers
+Outputs:
+LaTeX
+citations
+novelty extension
+Spawns sub-agents:
+theory agent
+experiment agent
+literature agent
+🧾 3. Small Paper Agent
+Generates:
+short IEEE-style papers
+workshop papers
+Faster turnaround
+High volume
+✍️ 4. Medium Implementation Agent
+Writes:
+real implementation-based blogs
+code + architecture + phases
+Output:
+Part 1 / Part 2 / Part 3 articles
+Focus: practical + human tone
+🧪 5. Review Agents (Critical Layer)
+One per content type
+Responsibilities:
+plagiarism check
+IEEE compliance
+logical consistency
+novelty validation
+Sends feedback loop → agent rework
+🧵 6. Sub-Agent Swarm
+
+Each idea → multiple research directions:
+
+alternative models
+architecture variants
+experimental comparisons
+📚 2. RESEARCH (IEEE + MEDIUM STRATEGY)
+📄 IEEE Papers (What matters)
+Structure:
+Abstract
+Introduction
+Related Work
+Methodology
+Results
+Conclusion
+Key Rules:
+Strict LaTeX formatting
+Citations required (IEEE style)
+Novel contribution REQUIRED
+No plagiarism
+Target Sources:
+IEEE
+arXiv
+✍️ Medium Strategy (Your Differentiator)
+
+Most Medium articles:
+❌ just explain concepts
+
+Your approach:
+✅ build + explain + show results
+
+Format:
+Part 1 → Problem + Architecture  
+Part 2 → Implementation + Code  
+Part 3 → Results + Improvements  
+🏗️ 3. SYSTEM ARCHITECTURE
+🔥 High-Level Architecture
+Frontend (React Dashboard)
+        ↓
+Backend API Layer (Node.js / Python)
+        ↓
+Agent Orchestrator (Claude Code Agents)
+        ↓
+Task Queue (Kafka / Redis)
+        ↓
+Sub-Agent Workers (VPS Containers)
+        ↓
+Storage Layer
+  - Papers (S3)
+  - Metadata (Postgres)
+        ↓
+External Integrations
+  - IEEE/arXiv scraping
+  - Medium API
+  - Gmail API
+  - WhatsApp API
+🧠 Agent Runtime (Important)
+
+Use:
+
+Anthropic Claude Code agents
+Containerized execution (Docker)
+Long-running processes (24/7)
+🎯 4. WEBSITE DESIGN (YOUR CONTROL CENTER)
+🖥️ Main Sections
+🏠 Home Dashboard
+Recent outputs
+Status of all agents
+Notifications
+🤖 Agents Panel
+
+Each agent gets:
+
+Files tab
+Current Tasks
+History
+Performance metrics
+📂 Files Explorer
+All generated documents
+Preview (LaTeX → PDF)
+Download
+🧪 Review Center (MOST IMPORTANT)
+
+3-panel UI:
+
+Left → Files list  
+Center → Document Viewer  
+Right → Comments / Notes  
+
+Features:
+
+inline comments
+approve/reject
+send back to agent
+⚙️ Settings Panel
+API keys (Anthropic)
+Gmail integration
+WhatsApp notifications
+Medium publishing
+🎨 UI DESIGN STACK
+React + Next.js
+Tailwind CSS (clean + modern)
+ShadCN UI (components)
+PDF.js (document preview)
+🔄 5. AUTOMATION FLOW
+Daily Cycle (Twice a Day)
+Trigger → Research Agent wakes
+→ Finds topics
+→ Sends to user (Telegram/WhatsApp)
+→ User selects topic
+→ Sub-agents spawn
+→ Papers generated
+→ Review agents validate
+→ Notify user
+→ User reviews on dashboard
+→ Approved → Publish
+🔐 6. KEY CHALLENGES (REAL TALK)
+
+Let me be blunt:
+
+❌ Biggest Risks
+IEEE acceptance rate is low
+LLM hallucination → fake research
+plagiarism detection
+“AI-written detection”
+✅ Your Mitigation
+enforce citation validation
+use multi-agent debate
+integrate real experiments (code execution)
+add “human editing layer” (you)
+🧪 7. IMPLEMENTATION PLAN
+Phase 1 – Foundation
+Agent orchestration
+basic research agent
+simple UI
+Phase 2 – Paper Generation
+IEEE agent
+LaTeX output
+file storage
+Phase 3 – Review System
+reviewer agents
+feedback loop
+Phase 4 – Medium Pipeline
+article generator
+Medium API integration
+Phase 5 – Dashboard
+full UI
+real-time tracking
+Phase 6 – Scale
+parallel agents
+advanced research
+submission tracking
+🧠 8. ADVANCED FEATURES (YOU SHOULD ADD)
+
+🔥 These will make your system insane:
+
+1. Research Memory Graph
+store all knowledge as graph
+reuse insights
+2. Experiment Runner
+run code automatically
+validate results
+3. Citation Verifier Agent
+ensures all references are real
+4. Journal Recommendation Engine
+suggests where to submit
+5. Impact Predictor
+predicts citations / reach
+🧩 FINAL THOUGHT
+
+What you’re building is not:
+
+❌ a content generator
+✅ a self-evolving research lab
+
+If executed well:
+
+you can publish consistently
+build authority
+even create startup/IP from research
