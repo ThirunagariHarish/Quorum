@@ -44,8 +44,13 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [llmProvider, setLlmProvider] = useState("anthropic");
   const [anthropicKey, setAnthropicKey] = useState("");
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
+  const [openaiKey, setOpenaiKey] = useState("");
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+  const [googleKey, setGoogleKey] = useState("");
+  const [showGoogleKey, setShowGoogleKey] = useState(false);
   const [telegramToken, setTelegramToken] = useState("");
   const [showTelegramToken, setShowTelegramToken] = useState(false);
   const [telegramChatId, setTelegramChatId] = useState("");
@@ -75,6 +80,7 @@ export default function SettingsPage() {
       .getSettings()
       .then((s) => {
         setSettings(s);
+        setLlmProvider(s.llm_provider || "anthropic");
         setTelegramChatId(s.telegram_chat_id || "");
         setNicheTopics(s.niche_topics || []);
         setCustomKeywords(s.custom_keywords || []);
@@ -90,6 +96,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const payload: Record<string, unknown> = {
+        llm_provider: llmProvider,
         niche_topics: nicheTopics,
         custom_keywords: customKeywords,
         daily_budget_usd: parseFloat(dailyBudget),
@@ -99,10 +106,13 @@ export default function SettingsPage() {
         telegram_chat_id: telegramChatId,
       };
       if (anthropicKey) payload.anthropic_api_key = anthropicKey;
+      if (openaiKey) payload.openai_api_key = openaiKey;
+      if (googleKey) payload.google_api_key = googleKey;
       if (telegramToken) payload.telegram_bot_token = telegramToken;
       if (devtoKey) payload.devto_api_key = devtoKey;
 
-      await api.updateSettings(payload as Partial<Settings>);
+      const updated = await api.updateSettings(payload as Partial<Settings>);
+      setSettings(updated);
       toast.success("Settings saved successfully");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save settings");
@@ -171,39 +181,134 @@ export default function SettingsPage() {
         </TabsList>
 
         {/* API Keys */}
-        <TabsContent value="api-keys" className="mt-6">
+        <TabsContent value="api-keys" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Anthropic API Key</CardTitle>
+              <CardTitle className="text-base">LLM provider</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Agents use the provider you select. Save keys for any provider you plan to use; only the
+                active provider&apos;s key is required at runtime.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Label htmlFor="llmProvider">Active provider</Label>
+              <Select value={llmProvider} onValueChange={(v) => v && setLlmProvider(v)}>
+                <SelectTrigger id="llmProvider" className="w-full max-w-md">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="google">Google AI (Gemini)</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Anthropic</CardTitle>
+              <p className="text-sm text-muted-foreground">Claude models (Messages API)</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    type={showAnthropicKey ? "text" : "password"}
-                    placeholder={settings?.anthropic_api_key_set ? "sk-ant-•••••••••" : "sk-ant-api03-..."}
-                    value={anthropicKey}
-                    onChange={(e) => setAnthropicKey(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowAnthropicKey(!showAnthropicKey)}
-                  >
-                    {showAnthropicKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
+              <div className="relative flex-1">
+                <Input
+                  type={showAnthropicKey ? "text" : "password"}
+                  placeholder={settings?.anthropic_api_key_set ? "sk-ant-•••••••••" : "sk-ant-api03-..."}
+                  value={anthropicKey}
+                  onChange={(e) => setAnthropicKey(e.target.value)}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowAnthropicKey(!showAnthropicKey)}
+                >
+                  {showAnthropicKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">Status:</span>
                 {settings?.anthropic_api_key_set ? (
                   <Badge variant="secondary" className="bg-green-500/15 text-green-700 dark:text-green-400">
                     <Check className="mr-1 h-3 w-3" />
-                    Connected
+                    Saved
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-zinc-500/15 text-zinc-600">
+                    Not configured
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">OpenAI</CardTitle>
+              <p className="text-sm text-muted-foreground">GPT-4o family (Chat Completions)</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative flex-1">
+                <Input
+                  type={showOpenaiKey ? "text" : "password"}
+                  placeholder={settings?.openai_api_key_set ? "sk-•••••••••" : "sk-proj-..."}
+                  value={openaiKey}
+                  onChange={(e) => setOpenaiKey(e.target.value)}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowOpenaiKey(!showOpenaiKey)}
+                >
+                  {showOpenaiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Status:</span>
+                {settings?.openai_api_key_set ? (
+                  <Badge variant="secondary" className="bg-green-500/15 text-green-700 dark:text-green-400">
+                    <Check className="mr-1 h-3 w-3" />
+                    Saved
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-zinc-500/15 text-zinc-600">
+                    Not configured
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Google AI (Gemini)</CardTitle>
+              <p className="text-sm text-muted-foreground">Gemini Developer API key (AI Studio)</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative flex-1">
+                <Input
+                  type={showGoogleKey ? "text" : "password"}
+                  placeholder={settings?.google_api_key_set ? "•••••••••" : "AIza..."}
+                  value={googleKey}
+                  onChange={(e) => setGoogleKey(e.target.value)}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowGoogleKey(!showGoogleKey)}
+                >
+                  {showGoogleKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Status:</span>
+                {settings?.google_api_key_set ? (
+                  <Badge variant="secondary" className="bg-green-500/15 text-green-700 dark:text-green-400">
+                    <Check className="mr-1 h-3 w-3" />
+                    Saved
                   </Badge>
                 ) : (
                   <Badge variant="secondary" className="bg-zinc-500/15 text-zinc-600">

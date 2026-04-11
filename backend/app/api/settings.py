@@ -12,7 +12,13 @@ from backend.app.schemas.setting import SettingsResponse, SettingsUpdateRequest
 router = APIRouter(prefix="/settings", tags=["settings"])
 logger = structlog.get_logger()
 
-ENCRYPTED_KEYS = {"anthropic_api_key", "telegram_bot_token", "devto_api_key"}
+ENCRYPTED_KEYS = {
+    "anthropic_api_key",
+    "openai_api_key",
+    "google_api_key",
+    "telegram_bot_token",
+    "devto_api_key",
+}
 
 
 def _mask_value(value: str) -> str:
