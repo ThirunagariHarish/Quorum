@@ -25,7 +25,15 @@ class ApiClient {
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new ApiError(res.status, error.detail || res.statusText, error.code);
+      const detail = error.detail;
+      const message =
+        typeof detail === "string"
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((e: { msg?: string }) => e.msg).filter(Boolean).join(" ") ||
+              res.statusText
+            : res.statusText;
+      throw new ApiError(res.status, message, error.code);
     }
 
     if (res.status === 204) return undefined as T;
