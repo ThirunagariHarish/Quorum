@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/resizable";
 import { CodeMirrorEditor } from "@/components/latex/codemirror-editor";
 import { PdfPreview } from "@/components/latex/pdf-preview";
-import api from "@/lib/api";
+import api, { compilePaper } from "@/lib/api";
 import { Save, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -107,12 +107,12 @@ export function LatexEditor({
     setIsCompiling(true);
     setCompileErrors([]);
     try {
-      const result = await api.compilePaper(paperId, texContent, bibContent);
-      if (result.success && result.pdf_b64) {
-        setPdfB64(result.pdf_b64);
+      const result = await compilePaper(paperId, texContent, bibContent);
+      if (result.pdf_base64) {
+        setPdfB64(result.pdf_base64);
         setCompileErrors([]);
       } else {
-        setCompileErrors(result.errors ?? ["Compilation failed."]);
+        setCompileErrors(result.errors?.length ? result.errors : ["Compilation failed."]);
       }
     } catch (err) {
       setCompileErrors([
