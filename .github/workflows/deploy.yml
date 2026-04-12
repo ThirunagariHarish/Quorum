@@ -15,6 +15,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -euo pipefail
             export APP_DIR="/opt/quorum"
             export REPO_URL="https://github.com/ThirunagariHarish/Quorum.git"
 
@@ -34,12 +35,66 @@ jobs:
 
             cd "$APP_DIR"
 
-            # Build and deploy
+            if [ ! -f .env.production ]; then
+              echo "ERROR: .env.production not found in $APP_DIR"
+              exit 1
+            fi
+
+            # Build and start containers (Caddy binds to host port 8080)
             docker compose -f docker-compose.prod.yml --env-file .env.production up --build -d
 
-            # Wait and health check
+            echo ">> Containers started:"
+            docker compose -f docker-compose.prod.yml ps
+
+            # Write Traefik dynamic config so Traefik routes paperpilotapp.com → Caddy:8080
+            # This works regardless of Docker network topology since we use the host gateway.
+            TRAEFIK_DYNAMIC_DIR="/data/proxy/dynamic"
+            if [ -d "$TRAEFIK_DYNAMIC_DIR" ]; then
+              # Determine host IP reachable from Traefik container
+              HOST_GW=$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}' 2>/dev/null || echo "172.17.0.1")
+              echo ">> Writing Traefik config (host gateway: $HOST_GW) ..."
+              cat > "$TRAEFIK_DYNAMIC_DIR/paperpilot.yml" << EOF
+            http:
+              routers:
+                paperpilot-https:
+                  rule: "Host(\`paperpilotapp.com\`) || Host(\`www.paperpilotapp.com\`)"
+                  entryPoints:
+                    - websecure
+                  service: paperpilot-svc
+                  tls:
+                    certResolver: letsencrypt
+                paperpilot-http:
+                  rule: "Host(\`paperpilotapp.com\`) || Host(\`www.paperpilotapp.com\`)"
+                  entryPoints:
+                    - web
+                  middlewares:
+                    - paperpilot-redirect
+                  service: paperpilot-svc
+              middlewares:
+                paperpilot-redirect:
+                  redirectScheme:
+                    scheme: https
+                    permanent: true
+              services:
+                paperpilot-svc:
+                  loadBalancer:
+                    servers:
+                      - url: "http://${HOST_GW}:8080"
+            EOF
+              echo ">> Traefik config written: $TRAEFIK_DYNAMIC_DIR/paperpilot.yml"
+            else
+              echo ">> WARNING: $TRAEFIK_DYNAMIC_DIR not found — Traefik file provider may not be active."
+              echo ">> Caddy is running on host port 8080. Configure your reverse proxy manually."
+            fi
+
+            # Wait and health check on port 8080
             sleep 15
-            curl -sf http://localhost:80/api/v1/health || echo "Health check pending..."
+            if curl -sf http://localhost:8080/api/v1/health > /dev/null 2>&1; then
+              echo ">> Health check PASSED on :8080"
+            else
+              echo ">> WARNING: Health check failed on :8080 — checking container logs:"
+              docker compose -f docker-compose.prod.yml logs --tail=20 caddy backend
+            fi
 
             # Cleanup
             docker image prune -f
