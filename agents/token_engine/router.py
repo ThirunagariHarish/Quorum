@@ -24,17 +24,17 @@ PROVIDER_CONFIG: Final[dict[str, dict]] = {
         "tier_to_model": {
             "deep": "claude-opus-4-20250514",
             "standard": "claude-sonnet-4-20250514",
-            "simple": "claude-haiku-4-20250514",
+            "simple": "claude-haiku-4-5-20251001",
         },
         "model_costs": {
             "claude-opus-4-20250514": {"input": 5.0, "output": 25.0},
             "claude-sonnet-4-20250514": {"input": 3.0, "output": 15.0},
-            "claude-haiku-4-20250514": {"input": 1.0, "output": 5.0},
+            "claude-haiku-4-5-20251001": {"input": 1.0, "output": 5.0},
         },
         "downgrade_map": {
             "claude-opus-4-20250514": "claude-sonnet-4-20250514",
-            "claude-sonnet-4-20250514": "claude-haiku-4-20250514",
-            "claude-haiku-4-20250514": "claude-haiku-4-20250514",
+            "claude-sonnet-4-20250514": "claude-haiku-4-5-20251001",
+            "claude-haiku-4-5-20251001": "claude-haiku-4-5-20251001",
         },
     },
     "openai": {
@@ -121,3 +121,7 @@ class ModelRouter:
             if m == model:
                 return tier
         return "standard"
+
+    def get_all_models(self) -> list[str]:
+        """Return a deduplicated list of all configured model IDs for this provider."""
+        return list(dict.fromkeys(self._cfg["tier_to_model"].values()))

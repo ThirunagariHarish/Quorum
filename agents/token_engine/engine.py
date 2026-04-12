@@ -211,7 +211,21 @@ class TokenBudgetEngine:
         if system_prompt:
             kwargs["system"] = system_prompt
 
-        response = await client.messages.create(**kwargs)
+        try:
+            response = await client.messages.create(**kwargs)
+        except anthropic.AuthenticationError as exc:
+            raise ValueError(
+                "Invalid Anthropic API key. Check ANTHROPIC_API_KEY in .env"
+            ) from exc
+        except anthropic.RateLimitError:
+            logger.warning("Rate limited by Anthropic (model=%s)", model)
+            raise
+        except anthropic.APIStatusError as exc:
+            logger.error("Anthropic API error %s: %s", exc.status_code, exc.message)
+            raise
+        except Exception as exc:
+            logger.error("Unexpected error calling Claude: %s", exc)
+            raise
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
         response_text = response.content[0].text if response.content else ""

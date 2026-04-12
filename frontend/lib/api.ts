@@ -103,13 +103,6 @@ class ApiClient {
     return this.request<void>(`/papers/${id}`, { method: "DELETE" });
   }
 
-  compilePaper(paperId: string, texContent: string, bibContent: string): Promise<CompileResponse> {
-    return this.request<CompileResponse>(`/papers/${paperId}/compile`, {
-      method: "POST",
-      body: JSON.stringify({ tex_content: texContent, bib_content: bibContent }),
-    });
-  }
-
   // ── Agents ────────────────────────────────────────────────────────
 
   getAgents() {
@@ -335,13 +328,6 @@ export class ApiError extends Error {
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-export interface CompileResponse {
-  success: boolean;
-  pdf_b64: string | null;
-  errors: string[];
-  log: string;
-}
-
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
@@ -511,3 +497,33 @@ export interface Deadline {
 
 export const api = new ApiClient();
 export default api;
+
+// ---------------------------------------------------------------------------
+// LaTeX editor helpers
+// ---------------------------------------------------------------------------
+
+export interface CompileResponse {
+  pdf_base64: string;
+  errors: string[];
+  warnings: string[];
+}
+
+export async function compilePaper(
+  paperId: string,
+  tex: string,
+  bib?: string
+): Promise<CompileResponse> {
+  const body: Record<string, string> = { tex };
+  if (bib !== undefined) body.bib = bib;
+  const res = await fetch(`/api/v1/papers/${paperId}/compile`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail ?? `Compile failed: ${res.status}`);
+  }
+  return res.json() as Promise<CompileResponse>;
+}
