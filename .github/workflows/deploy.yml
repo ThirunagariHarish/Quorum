@@ -58,14 +58,20 @@ jobs:
             echo ">> Containers started:"
             docker compose -f docker-compose.prod.yml ps
 
-            # Health check: Caddy directly on :80
-            sleep 15
+            # Health check: Caddy on :80, then check TLS status
+            sleep 30
             if curl -sf http://localhost/api/v1/health > /dev/null 2>&1; then
-              echo ">> Health check PASSED — PaperPilot is live"
+              echo ">> HTTP health check PASSED"
             else
-              echo ">> WARNING: Health check failed — container logs:"
-              docker compose -f docker-compose.prod.yml logs --tail=30 caddy backend
+              echo ">> WARNING: HTTP health check failed"
+              docker compose -f docker-compose.prod.yml logs --tail=20 caddy backend
             fi
+
+            echo ">> Caddy TLS/cert log (last 30 lines):"
+            docker compose -f docker-compose.prod.yml logs --tail=30 caddy 2>&1 | grep -E "(tls|cert|acme|https|error|obtain|renew|Error)" || echo "   (no TLS log entries yet)"
+
+            echo ">> Port 443 reachable test:"
+            curl -sk --max-time 5 https://localhost/api/v1/health > /dev/null 2>&1 && echo "   HTTPS OK" || echo "   HTTPS not yet ready (cert may still be issuing)"
 
             # Cleanup
             docker image prune -f
