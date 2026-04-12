@@ -1,6 +1,6 @@
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.deps import get_current_user, get_db
@@ -78,12 +78,11 @@ async def get_me(current_user: User = Depends(get_current_user)):
 
 @router.post("/setup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def setup(body: SetupRequest, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(func.count()).select_from(User))
-    count = result.scalar_one()
-    if count > 0:
+    existing = await db.execute(select(User).where(User.email == body.email))
+    if existing.scalar_one_or_none() is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Setup already completed. A user already exists.",
+            detail="An account with this email already exists. Try signing in.",
         )
 
     user = User(
@@ -97,7 +96,7 @@ async def setup(body: SetupRequest, db: AsyncSession = Depends(get_db)):
 
     access_token = create_access_token(str(user.id))
     refresh_token = create_refresh_token(str(user.id))
-    logger.info("initial_setup", user_id=str(user.id), email=user.email)
+    logger.info("user_signup", user_id=str(user.id), email=user.email)
 
     return TokenResponse(
         access_token=access_token,

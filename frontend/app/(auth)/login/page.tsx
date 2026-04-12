@@ -33,7 +33,7 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Authentication failed";
-      if (message.includes("No users") || message.includes("setup")) {
+      if (message.includes("No users")) {
         setIsSetup(true);
         setError("No account found. Please create your account.");
       } else {

@@ -25,7 +25,15 @@ class ApiClient {
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new ApiError(res.status, error.detail || res.statusText, error.code);
+      const detail = error.detail;
+      const message =
+        typeof detail === "string"
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((e: { msg?: string }) => e.msg).filter(Boolean).join(" ") ||
+              res.statusText
+            : res.statusText;
+      throw new ApiError(res.status, message, error.code);
     }
 
     if (res.status === 204) return undefined as T;
@@ -226,14 +234,16 @@ class ApiClient {
   // ── Settings ──────────────────────────────────────────────────────
 
   getSettings() {
-    return this.request<Settings>("/settings");
+    return this.request<{ settings: Record<string, unknown> }>("/settings").then(
+      (r) => normalizeSettingsPayload(r.settings)
+    );
   }
 
   updateSettings(data: Partial<Settings>) {
-    return this.request<Settings>("/settings", {
+    return this.request<{ settings: Record<string, unknown> }>("/settings", {
       method: "PUT",
-      body: JSON.stringify(data),
-    });
+      body: JSON.stringify({ settings: data }),
+    }).then((r) => normalizeSettingsPayload(r.settings));
   }
 
   // ── Deadlines ─────────────────────────────────────────────────────
@@ -439,8 +449,14 @@ export interface BudgetConfig {
 }
 
 export interface Settings {
+  /** Which provider agents use for LLM calls (stored per user). */
+  llm_provider: string;
   anthropic_api_key?: string;
   anthropic_api_key_set: boolean;
+  openai_api_key?: string;
+  openai_api_key_set: boolean;
+  google_api_key?: string;
+  google_api_key_set: boolean;
   telegram_bot_token?: string;
   telegram_bot_token_set: boolean;
   telegram_chat_id?: string;
@@ -454,6 +470,29 @@ export interface Settings {
   default_publish_mode?: string;
   schedule_morning?: string;
   schedule_evening?: string;
+}
+
+function normalizeSettingsPayload(raw: Record<string, unknown>): Settings {
+  return {
+    llm_provider: (raw.llm_provider as string) || "anthropic",
+    anthropic_api_key_set: Boolean(raw.anthropic_api_key_set),
+    openai_api_key_set: Boolean(raw.openai_api_key_set),
+    google_api_key_set: Boolean(raw.google_api_key_set),
+    telegram_bot_token_set: Boolean(raw.telegram_bot_token_set),
+    devto_api_key_set: Boolean(raw.devto_api_key_set),
+    anthropic_api_key: raw.anthropic_api_key as string | undefined,
+    telegram_bot_token: raw.telegram_bot_token as string | undefined,
+    telegram_chat_id: raw.telegram_chat_id as string | undefined,
+    devto_api_key: raw.devto_api_key as string | undefined,
+    niche_topics: (raw.niche_topics as string[]) ?? [],
+    custom_keywords: (raw.custom_keywords as string[]) ?? [],
+    daily_budget_usd: Number(raw.daily_budget_usd ?? 10),
+    monthly_budget_usd: Number(raw.monthly_budget_usd ?? 300),
+    auto_downgrade: Boolean(raw.auto_downgrade ?? true),
+    default_publish_mode: raw.default_publish_mode as string | undefined,
+    schedule_morning: raw.schedule_morning as string | undefined,
+    schedule_evening: raw.schedule_evening as string | undefined,
+  };
 }
 
 export interface Deadline {
