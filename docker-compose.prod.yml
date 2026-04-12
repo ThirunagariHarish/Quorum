@@ -75,9 +75,25 @@ services:
 
   caddy:
     image: caddy:2-alpine
-    ports:
-      - "80:80"
-      - "443:443"
+    expose:
+      - "80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
+      # HTTPS router
+      - "traefik.http.routers.paperpilot.rule=Host(`paperpilotapp.com`) || Host(`www.paperpilotapp.com`)"
+      - "traefik.http.routers.paperpilot.entrypoints=websecure"
+      - "traefik.http.routers.paperpilot.tls=true"
+      - "traefik.http.routers.paperpilot.tls.certresolver=letsencrypt"
+      - "traefik.http.services.paperpilot.loadbalancer.server.port=80"
+      # HTTP → HTTPS redirect
+      - "traefik.http.routers.paperpilot-http.rule=Host(`paperpilotapp.com`) || Host(`www.paperpilotapp.com`)"
+      - "traefik.http.routers.paperpilot-http.entrypoints=web"
+      - "traefik.http.routers.paperpilot-http.middlewares=paperpilot-https"
+      - "traefik.http.middlewares.paperpilot-https.redirectscheme.scheme=https"
+    networks:
+      - default
+      - coolify
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -92,3 +108,8 @@ volumes:
   minio_data:
   caddy_data:
   caddy_config:
+
+networks:
+  default:
+  coolify:
+    external: true

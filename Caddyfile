@@ -1,4 +1,4 @@
-paperpilotapp.com, www.paperpilotapp.com {
+:80 {
 	handle /api/* {
 		reverse_proxy backend:8000
 	}
