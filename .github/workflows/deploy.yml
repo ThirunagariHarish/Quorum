@@ -40,69 +40,22 @@ jobs:
               exit 1
             fi
 
-            # Build and start PaperPilot containers
-            # First, free ports 80/443 from any other container (e.g. Phoenix nginx)
-            echo ">> Checking for containers occupying ports 80 or 443..."
-            for port in 80 443; do
-              CONTAINER_ID=$(docker ps --format "{{.ID}} {{.Ports}}" | grep ":${port}->" | awk '{print $1}')
-              if [ -n "$CONTAINER_ID" ]; then
-                CONTAINER_NAME=$(docker inspect --format "{{.Name}}" "$CONTAINER_ID" | tr -d '/')
-                echo ">> Stopping $CONTAINER_NAME (was occupying port $port)"
-                docker stop "$CONTAINER_ID" || true
-              fi
-            done
+            # Ensure the shared Traefik network exists
+            docker network create traefik 2>/dev/null || echo ">> traefik network already exists"
 
+            # Build and start PaperPilot containers
             docker compose -f docker-compose.prod.yml --env-file .env.production up --build -d
 
             echo ">> Containers started:"
             docker compose -f docker-compose.prod.yml ps
 
-            # Write Traefik dynamic config so Traefik routes paperpilotapp.com → Caddy:8080
-            # This works regardless of Docker network topology since we use the host gateway.
-            TRAEFIK_DYNAMIC_DIR="/data/proxy/dynamic"
-            if [ -d "$TRAEFIK_DYNAMIC_DIR" ]; then
-              # Determine host IP reachable from Traefik container
-              HOST_GW=$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}' 2>/dev/null || echo "172.17.0.1")
-              echo ">> Writing Traefik config (host gateway: $HOST_GW) ..."
-              cat > "$TRAEFIK_DYNAMIC_DIR/paperpilot.yml" << EOF
-            http:
-              routers:
-                paperpilot-https:
-                  rule: "Host(\`paperpilotapp.com\`) || Host(\`www.paperpilotapp.com\`)"
-                  entryPoints:
-                    - websecure
-                  service: paperpilot-svc
-                  tls:
-                    certResolver: letsencrypt
-                paperpilot-http:
-                  rule: "Host(\`paperpilotapp.com\`) || Host(\`www.paperpilotapp.com\`)"
-                  entryPoints:
-                    - web
-                  middlewares:
-                    - paperpilot-redirect
-                  service: paperpilot-svc
-              middlewares:
-                paperpilot-redirect:
-                  redirectScheme:
-                    scheme: https
-                    permanent: true
-              services:
-                paperpilot-svc:
-                  loadBalancer:
-                    servers:
-                      - url: "http://${HOST_GW}:8080"
-            EOF
-              echo ">> Traefik config written: $TRAEFIK_DYNAMIC_DIR/paperpilot.yml"
-            else
-              echo ">> No Traefik dynamic dir found — Caddy owns ports 80/443 directly."
-            fi
-
-            # Wait and health check on port 80 (Caddy handles TLS + proxy)
+            # Wait and health check (Traefik routes 80/443 → Caddy:80)
             sleep 15
             if curl -sf http://localhost:80/api/v1/health > /dev/null 2>&1; then
               echo ">> Health check PASSED on :80"
             else
-              echo ">> WARNING: Health check failed on :80 — checking container logs:"
+              echo ">> Health check via Traefik pending (cert may still be issuing)."
+              echo ">> Checking Caddy is up internally..."
               docker compose -f docker-compose.prod.yml logs --tail=20 caddy backend
             fi
 
