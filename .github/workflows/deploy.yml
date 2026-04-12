@@ -40,7 +40,18 @@ jobs:
               exit 1
             fi
 
-            # Build and start containers (Caddy binds to host port 8080)
+            # Build and start PaperPilot containers
+            # First, free ports 80/443 from any other container (e.g. Phoenix nginx)
+            echo ">> Checking for containers occupying ports 80 or 443..."
+            for port in 80 443; do
+              CONTAINER_ID=$(docker ps --format "{{.ID}} {{.Ports}}" | grep ":${port}->" | awk '{print $1}')
+              if [ -n "$CONTAINER_ID" ]; then
+                CONTAINER_NAME=$(docker inspect --format "{{.Name}}" "$CONTAINER_ID" | tr -d '/')
+                echo ">> Stopping $CONTAINER_NAME (was occupying port $port)"
+                docker stop "$CONTAINER_ID" || true
+              fi
+            done
+
             docker compose -f docker-compose.prod.yml --env-file .env.production up --build -d
 
             echo ">> Containers started:"
@@ -83,16 +94,15 @@ jobs:
             EOF
               echo ">> Traefik config written: $TRAEFIK_DYNAMIC_DIR/paperpilot.yml"
             else
-              echo ">> WARNING: $TRAEFIK_DYNAMIC_DIR not found — Traefik file provider may not be active."
-              echo ">> Caddy is running on host port 8080. Configure your reverse proxy manually."
+              echo ">> No Traefik dynamic dir found — Caddy owns ports 80/443 directly."
             fi
 
-            # Wait and health check on port 8080
+            # Wait and health check on port 80 (Caddy handles TLS + proxy)
             sleep 15
-            if curl -sf http://localhost:8080/api/v1/health > /dev/null 2>&1; then
-              echo ">> Health check PASSED on :8080"
+            if curl -sf http://localhost:80/api/v1/health > /dev/null 2>&1; then
+              echo ">> Health check PASSED on :80"
             else
-              echo ">> WARNING: Health check failed on :8080 — checking container logs:"
+              echo ">> WARNING: Health check failed on :80 — checking container logs:"
               docker compose -f docker-compose.prod.yml logs --tail=20 caddy backend
             fi
 
