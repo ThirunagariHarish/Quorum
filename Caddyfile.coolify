@@ -1,0 +1,38 @@
+# Caddyfile for Coolify deployments.
+#
+# When running behind Coolify's Traefik reverse proxy, Caddy must NOT
+# bind to ports 80/443 directly (Traefik owns those). Instead Caddy
+# listens on :80 internally only; Traefik handles TLS termination and
+# routes paperpilotapp.com → this container on port 80.
+#
+# For standalone (non-Coolify) deploys, use the root Caddyfile instead.
+
+:80 {
+	# Strip X-Forwarded-Proto from downstream to prevent spoofing;
+	# Traefik sets it correctly above us.
+	header_down -X-Powered-By
+
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	handle /ws {
+		reverse_proxy backend:8000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	handle /docs {
+		reverse_proxy backend:8000
+	}
+
+	handle /openapi.json {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

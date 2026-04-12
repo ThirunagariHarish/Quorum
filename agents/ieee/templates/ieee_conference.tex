@@ -1,14 +1,102 @@
 \documentclass[conference]{IEEEtran}
+
+% ---------------------------------------------------------------
+% Core IEEE packages
+% ---------------------------------------------------------------
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
-\usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{algorithm}
 \usepackage{multirow}
+
+% ---------------------------------------------------------------
+% Layout / float control
+% ---------------------------------------------------------------
+\usepackage{float}        % Provides [H] placement specifier
+\usepackage[caption=false,font=footnotesize]{subfig}
+% Subfigures: use subfig's \subfloat, NOT \begin{subfigure}
+% Example:
+%   \subfloat[Caption a]{\includegraphics[width=0.45\linewidth]{fig_a}\label{fig:a}}
+%   \hfil
+%   \subfloat[Caption b]{\includegraphics[width=0.45\linewidth]{fig_b}\label{fig:b}}
+\usepackage{balance}      % Equal-height columns on last page (\balance)
+\usepackage{microtype}    % Microtypographic extensions – prevents overfull \hbox
+
+% ---------------------------------------------------------------
+% Cross-referencing  (hyperref MUST be loaded after most packages)
+% ---------------------------------------------------------------
+\usepackage{hyperref}     % PDF links (always load near last)
+\usepackage{cleveref}     % Smart refs: \cref{fig:foo}, \cref{tab:bar}, etc.
+\crefname{figure}{Fig.}{Figs.}
+\crefname{table}{Table}{Tables}
+\crefname{equation}{Eq.}{Eqs.}
+\crefname{section}{Sec.}{Secs.}
+
+% ---------------------------------------------------------------
+% Figure usage examples (for guidance – not printed):
+%
+%   Single-column figure (fits in one column):
+%     \begin{figure}[!htbp]
+%       \centering
+%       \includegraphics[width=\linewidth]{fig1.pdf}
+%       \caption{Caption text below the figure.}
+%       \label{fig:example}
+%     \end{figure}
+%
+%   Full-width figure spanning both columns:
+%     \begin{figure*}[!t]
+%       \centering
+%       \includegraphics[width=\textwidth]{fig_wide.pdf}
+%       \caption{Wide figure caption.}
+%       \label{fig:wide}
+%     \end{figure*}
+%
+%   TikZ/pgfplots figure:
+%     \begin{figure}[!htbp]
+%       \centering
+%       \begin{tikzpicture}
+%         % ... tikz code here ...
+%       \end{tikzpicture}
+%       \caption{TikZ figure caption.}
+%       \label{fig:tikz}
+%     \end{figure}
+%
+% Equation usage examples:
+%
+%   Numbered equation:
+%     \begin{equation}
+%       E = mc^2
+%     \label{eq:einstein}
+%     \end{equation}
+%
+%   Multi-line aligned equations:
+%     \begin{align}
+%       a &= b + c \\
+%       d &= e - f
+%     \end{align}
+%
+%   Inline math: $x = y^2 + z$
+%   Display math (unnumbered): \[ \sum_{i=1}^{N} x_i \]
+%
+% Table usage (caption ABOVE table body):
+%     \begin{table}[!t]
+%       \caption{Results comparison}
+%       \label{tab:results}
+%       \centering
+%       \begin{tabular}{lcc}
+%         \toprule
+%         Method & Acc. & F1 \\
+%         \midrule
+%         Baseline & 0.82 & 0.79 \\
+%         Ours     & 0.91 & 0.89 \\
+%         \bottomrule
+%       \end{tabular}
+%     \end{table}
+% ---------------------------------------------------------------
 
 \begin{document}
 
@@ -54,6 +142,10 @@
 
 \section*{Acknowledgment}
 <<ACKNOWLEDGMENT>>
+
+% \balance equalises column heights on the final page.
+% It must appear in the last section before the bibliography.
+\balance
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

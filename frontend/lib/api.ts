@@ -95,6 +95,13 @@ class ApiClient {
     return this.request<void>(`/papers/${id}`, { method: "DELETE" });
   }
 
+  compilePaper(paperId: string, texContent: string, bibContent: string): Promise<CompileResponse> {
+    return this.request<CompileResponse>(`/papers/${paperId}/compile`, {
+      method: "POST",
+      body: JSON.stringify({ tex_content: texContent, bib_content: bibContent }),
+    });
+  }
+
   // ── Agents ────────────────────────────────────────────────────────
 
   getAgents() {
@@ -317,6 +324,13 @@ export class ApiError extends Error {
 }
 
 // ── Types ─────────────────────────────────────────────────────────────
+
+export interface CompileResponse {
+  success: boolean;
+  pdf_b64: string | null;
+  errors: string[];
+  log: string;
+}
 
 export interface PaginatedResponse<T> {
   items: T[];

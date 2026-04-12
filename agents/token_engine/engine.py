@@ -158,7 +158,32 @@ class TokenBudgetEngine:
         if system_prompt:
             kwargs["system"] = system_prompt
 
-        response = await client.messages.create(**kwargs)
+        try:
+            response = await client.messages.create(**kwargs)
+        except anthropic.AuthenticationError as exc:
+            raise ValueError(
+                "Invalid Anthropic API key. Check ANTHROPIC_API_KEY in .env"
+            ) from exc
+        except anthropic.RateLimitError as exc:
+            logger.warning(
+                "Rate limited by Anthropic: %s", exc,
+                extra={"agent_type": agent_type, "task_phase": task_phase},
+            )
+            raise
+        except anthropic.APIStatusError as exc:
+            logger.error(
+                "Anthropic API error %s: %s",
+                exc.status_code,
+                exc.message,
+                extra={"agent_type": agent_type, "task_phase": task_phase},
+            )
+            raise
+        except Exception as exc:
+            logger.error(
+                "Unexpected error calling Claude: %s", exc,
+                extra={"agent_type": agent_type, "task_phase": task_phase},
+            )
+            raise
 
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
@@ -194,6 +219,6 @@ class TokenBudgetEngine:
         _reverse = {
             "claude-opus-4-20250514": "deep",
             "claude-sonnet-4-20250514": "standard",
-            "claude-haiku-4-20250514": "simple",
+            "claude-haiku-4-5-20251001": "simple",
         }
         return _reverse.get(model, "standard")

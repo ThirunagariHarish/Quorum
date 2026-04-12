@@ -31,6 +31,24 @@ FORMAT RULES:
 - Citations: IEEE numeric style [1], [2], [3]
 - References: IEEE format with DOIs where available
 
+LATEX FORMATTING RULES (CRITICAL — follow exactly):
+- Every equation MUST use \\begin{equation}...\\end{equation} or $...$ for inline. \
+NEVER use bare LaTeX commands outside math mode (e.g. \\alpha must be $\\alpha$).
+- Every figure MUST use \\begin{figure}[!htbp]...\\end{figure} with \\centering, \
+\\includegraphics[width=\\linewidth]{fig_name}, and \\caption{...} placed BELOW the image.
+- For full-width figures spanning both columns: \\begin{figure*}[!t]...\\end{figure*}
+- Tables MUST use \\begin{table}[!t] with \\caption{...} placed ABOVE the tabular environment.
+- NEVER use absolute positioning (\\vspace, \\hspace, \\raisebox) to manually position \
+figures or text — let LaTeX float them naturally.
+- Keep all figure/table filenames simple: fig1.pdf, fig2.png, table1.pdf \
+(no spaces, no special characters, no path separators).
+- For TikZ figures: always enclose the tikzpicture inside a figure float: \
+\\begin{figure}[!htbp]...\\begin{tikzpicture}...\\end{tikzpicture}...\\caption{...}\\end{figure}
+- Column balance: add \\balance immediately before \\bibliographystyle on the last page.
+- Add \\usepackage{microtype} in the preamble to prevent text overflow and overfull hboxes.
+- Add \\usepackage{float} in the preamble to enable the [H] specifier when needed.
+- Placement specifiers: always use [!htbp] or [!t] — NEVER use only [h] or no specifier.
+
 NOVELTY REQUIREMENTS:
 - Each paper MUST represent a genuine extension, not a restatement
 - Extension types: methodology swap, domain transfer, scale validation, \
@@ -106,6 +124,18 @@ The final paper must:
 - Have at least 15 unique, real references
 - Stay within 8 pages (excluding references)
 - Have a clear, novel contribution statement
+
+PRE-OUTPUT VALIDATION CHECKLIST (verify each point before finalising):
+1. Every \\includegraphics{...} references a valid, simple filename (no spaces, \
+no special characters). If a figure file is not available, use a TikZ placeholder.
+2. Every equation is wrapped in a proper math environment: \
+\\begin{equation}...\\end{equation}, \\begin{align}...\\end{align}, $...$, or \\[...\\]. \
+No bare \\alpha, \\beta, ^, _ or other math syntax outside math mode.
+3. No figure environment uses only [h] as placement — must be [!htbp] or [!t].
+4. \\balance appears on a line immediately before \\bibliographystyle.
+5. \\usepackage{microtype} is present in the preamble.
+6. No raw text math expressions like "f(x) = x^2" — must be $f(x) = x^2$.
+7. All \\cite{} keys correspond to entries in references.bib.
 
 OUTPUT: Final paper.tex and references.bib content.
 """

@@ -18,6 +18,7 @@ from backend.app.models.agent import Agent
 
 from backend.app.api.auth import router as auth_router
 from backend.app.api.papers import router as papers_router
+from backend.app.api.latex import router as latex_router
 from backend.app.api.agents import router as agents_router
 from backend.app.api.tasks import router as tasks_router
 from backend.app.api.reviews import router as reviews_router
@@ -41,7 +42,7 @@ DEFAULT_AGENTS = [
     {"name": "Blog Agent", "agent_type": "blog", "default_model": "claude-sonnet-4-20250514"},
     {"name": "IEEE Reviewer", "agent_type": "reviewer_ieee", "default_model": "claude-opus-4-20250514"},
     {"name": "Small Paper Reviewer", "agent_type": "reviewer_small", "default_model": "claude-sonnet-4-20250514"},
-    {"name": "Blog Reviewer", "agent_type": "reviewer_blog", "default_model": "claude-haiku-4-20250514"},
+    {"name": "Blog Reviewer", "agent_type": "reviewer_blog", "default_model": "claude-haiku-4-5-20251001"},
 ]
 
 
@@ -99,7 +100,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Quorum API",
     description="Autonomous multi-agent research platform API",
-    version="1.0.0",
+    version="1.1.0",
     lifespan=lifespan,
 )
 
@@ -115,6 +116,7 @@ app.add_middleware(
 API_PREFIX = "/api/v1"
 app.include_router(auth_router, prefix=API_PREFIX)
 app.include_router(papers_router, prefix=API_PREFIX)
+app.include_router(latex_router, prefix=API_PREFIX)
 app.include_router(agents_router, prefix=API_PREFIX)
 app.include_router(tasks_router, prefix=API_PREFIX)
 app.include_router(reviews_router, prefix=API_PREFIX)

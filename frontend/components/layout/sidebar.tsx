@@ -17,6 +17,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Menu,
+  FileCode2,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { label: "Agents", href: "/agents", icon: Bot },
   { label: "Files", href: "/files", icon: FileText },
   { label: "Review", href: "/review", icon: ClipboardCheck },
+  { label: "LaTeX Editor", href: "/latex-editor", icon: FileCode2 },
   { label: "Token Usage", href: "/tokens", icon: Coins },
   { label: "Deadlines", href: "/deadlines", icon: Calendar },
   { label: "Settings", href: "/settings", icon: Settings },

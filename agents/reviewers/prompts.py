@@ -20,6 +20,19 @@ FORMAT (auto-detectable):
 - [ ] All required sections present: Introduction, Related Work, Methodology, \
 Experimental Setup, Results, Conclusion (Blocker)
 
+LATEX FORMAT COMPLIANCE:
+- [ ] All equations use proper math environments (equation/align/$$/$...$) (Blocker)
+- [ ] No bare Greek letters or math symbols outside math mode \
+(e.g. bare \\alpha, \\beta, ^, _ in text) (Major)
+- [ ] All figures have [!htbp] or [!t] placement specifier — NOT bare [h] or no specifier (Major)
+- [ ] \\balance is present immediately before \\bibliographystyle (Major)
+- [ ] \\usepackage{microtype} is in the preamble (Minor)
+- [ ] No Overfull \\hbox errors detectable from the template content (Major)
+- [ ] All \\includegraphics filenames are simple: no spaces, no special characters (Minor)
+- [ ] Full-width figures spanning both columns use figure* environment (Minor)
+- [ ] Figure captions appear BELOW the image (Major)
+- [ ] Table captions appear ABOVE the tabular body (Major)
+
 CITATIONS:
 - [ ] Minimum 15 references (Major)
 - [ ] All citations have valid BibTeX entries (Blocker)
@@ -49,6 +62,8 @@ Return a JSON object with:
 - verdict: "approve" | "revise" | "reject"
 - overall_quality: 1-10
 - issues: list of {{severity, category, location, description, suggestion}}
+  (valid categories: format, latex_format, math_mode, figure_placement, \
+citations, novelty, logic, writing)
 - summary: 2-3 sentence overall assessment
 - revision_number: {revision_number}
 - max_revisions: 3

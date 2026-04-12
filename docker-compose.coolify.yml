@@ -1,0 +1,118 @@
+###############################################################################
+# PaperPilot — Coolify Production Compose
+#
+# Deploy via Coolify's Docker Compose build pack.
+# All ${VAR} references are auto-detected and exposed in Coolify's UI.
+# Set them in Coolify's Environment Variables panel before deploying.
+#
+# Coolify routes traffic to the caddy service (port 80) via Traefik.
+# Traefik handles TLS termination for paperpilotapp.com.
+#
+# Domain config in Coolify:
+#   Service : caddy
+#   Port    : 80
+#   Domain  : paperpilotapp.com
+###############################################################################
+
+services:
+  # ── Infrastructure ─────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: quorum
+      POSTGRES_USER: quorum
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quorum"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Application ────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://quorum:${POSTGRES_PASSWORD}@postgres:5432/quorum
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_SECURE: "false"
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["https://paperpilotapp.com"]}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-https://paperpilotapp.com}
+        NEXT_PUBLIC_WS_URL: ${PUBLIC_WS_URL:-wss://paperpilotapp.com}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ── Reverse Proxy (Coolify routes via Traefik → caddy:80) ─────────────────
+  caddy:
+    image: caddy:2-alpine
+    expose:
+      - "80"
+    # No ports: mapping — Traefik owns 80/443 on the host.
+    # Caddy only listens internally on :80 and proxies to frontend/backend.
+    volumes:
+      - ./Caddyfile.coolify:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  minio_data:
+  caddy_data:
+  caddy_config:
