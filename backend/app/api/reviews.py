@@ -128,7 +128,8 @@ async def get_review(
 ):
     result = await db.execute(
         select(Review)
-        .where(Review.id == review_id)
+        .join(Paper, Review.paper_id == Paper.id)
+        .where(Review.id == review_id, Paper.user_id == current_user.id)
         .options(selectinload(Review.comments))
     )
     review = result.scalar_one_or_none()
@@ -147,7 +148,10 @@ async def update_review(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Review).where(Review.id == review_id).options(selectinload(Review.comments))
+        select(Review)
+        .join(Paper, Review.paper_id == Paper.id)
+        .where(Review.id == review_id, Paper.user_id == current_user.id)
+        .options(selectinload(Review.comments))
     )
     review = result.scalar_one_or_none()
     if not review:
@@ -178,7 +182,11 @@ async def add_comment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Review).where(Review.id == review_id))
+    result = await db.execute(
+        select(Review)
+        .join(Paper, Review.paper_id == Paper.id)
+        .where(Review.id == review_id, Paper.user_id == current_user.id)
+    )
     review = result.scalar_one_or_none()
     if not review:
         raise HTTPException(
@@ -207,6 +215,16 @@ async def list_comments(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    ownership = await db.execute(
+        select(Review)
+        .join(Paper, Review.paper_id == Paper.id)
+        .where(Review.id == review_id, Paper.user_id == current_user.id)
+    )
+    if not ownership.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Review not found"
+        )
+
     result = await db.execute(
         select(Comment)
         .where(Comment.review_id == review_id)
@@ -223,7 +241,10 @@ async def submit_feedback(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Review).where(Review.id == review_id).options(selectinload(Review.comments))
+        select(Review)
+        .join(Paper, Review.paper_id == Paper.id)
+        .where(Review.id == review_id, Paper.user_id == current_user.id)
+        .options(selectinload(Review.comments))
     )
     review = result.scalar_one_or_none()
     if not review:
@@ -251,7 +272,11 @@ async def approve_paper(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Review).where(Review.id == review_id))
+    result = await db.execute(
+        select(Review)
+        .join(Paper, Review.paper_id == Paper.id)
+        .where(Review.id == review_id, Paper.user_id == current_user.id)
+    )
     review = result.scalar_one_or_none()
     if not review:
         raise HTTPException(

@@ -28,7 +28,7 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: dict[str, WebSocket] = {}
         self._redis = None
-        self._pubsub_task: asyncio.Optional[Task] = None
+        self._pubsub_task: Optional[asyncio.Task] = None
 
     async def _get_redis(self):
         if self._redis is None:

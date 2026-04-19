@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Optional
 
 import structlog
@@ -50,7 +51,8 @@ async def list_papers(
     count_query = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_query)).scalar_one()
 
-    sort_col = getattr(Paper, sort_by, Paper.created_at)
+    ALLOWED_SORT_COLS = {"created_at", "updated_at", "title", "status", "current_version"}
+    sort_col = getattr(Paper, sort_by if sort_by in ALLOWED_SORT_COLS else "created_at")
     if sort_order == "asc":
         query = query.order_by(sort_col.asc())
     else:
@@ -204,10 +206,16 @@ async def delete_paper(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paper not found")
 
     if paper.storage_prefix:
-        try:
-            storage_service.delete_file("papers", paper.storage_prefix)
-        except Exception:
-            logger.warning("failed_to_delete_storage", prefix=paper.storage_prefix)
+        def _delete_storage():
+            try:
+                objects = storage_service.client.list_objects(
+                    "papers", prefix=paper.storage_prefix, recursive=True
+                )
+                for obj in objects:
+                    storage_service.client.remove_object("papers", obj.object_name)
+            except Exception as e:
+                logger.warning("storage_delete_failed", error=str(e))
+        await asyncio.to_thread(_delete_storage)
 
     await db.delete(paper)
     logger.info("paper_deleted", paper_id=str(paper.id))

@@ -13,31 +13,34 @@ import { TrendingDown, TrendingUp, Zap, Target } from "lucide-react";
 import api from "@/lib/api";
 
 export default function TokensPage() {
-  const { dailyUsage, summary, budget, forecast, fetchUsage, fetchBudget, fetchForecast } =
+  const { dailyUsage, summary, forecast, fetchUsage, fetchBudget, fetchForecast } =
     useTokenStore();
   const [loading, setLoading] = useState(true);
   const [agentCostData, setAgentCostData] = useState<{ name: string; value: number }[]>([]);
   const [modelCostData, setModelCostData] = useState<{ model: string; cost: number }[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchUsage(), fetchBudget(), fetchForecast()]).finally(() =>
-      setLoading(false)
-    );
+    let cancelled = false;
+    (async () => {
+      await Promise.all([fetchUsage(), fetchBudget(), fetchForecast()]);
+      if (!cancelled) setLoading(false);
 
-    api
-      .getAgents()
-      .then((res) => {
-        setAgentCostData(
-          res.items.map((a) => ({ name: a.name, value: a.total_cost_usd }))
-        );
-      })
-      .catch(() => {});
+      try {
+        const res = await api.getAgents();
+        if (!cancelled)
+          setAgentCostData(
+            res.items.map((a) => ({ name: a.name, value: a.total_cost_usd }))
+          );
+      } catch {}
 
-    setModelCostData([
-      { model: "Haiku", cost: 0 },
-      { model: "Sonnet", cost: 0 },
-      { model: "Opus", cost: 0 },
-    ]);
+      if (!cancelled)
+        setModelCostData([
+          { model: "Haiku", cost: 0 },
+          { model: "Sonnet", cost: 0 },
+          { model: "Opus", cost: 0 },
+        ]);
+    })();
+    return () => { cancelled = true; };
   }, [fetchUsage, fetchBudget, fetchForecast]);
 
   const dailyPct = summary?.daily_budget

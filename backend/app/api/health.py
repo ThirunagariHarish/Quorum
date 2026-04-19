@@ -101,10 +101,20 @@ async def check_claude_health(
         redis_client = aioredis.from_url(settings.REDIS_URL)
         cached = await redis_client.get(_REDIS_CACHE_KEY)
         if cached is not None:
-            await redis_client.aclose()
-            payload = json.loads(cached)
-            payload["cached"] = True
-            return payload
+            try:
+                payload = json.loads(cached)
+                payload["cached"] = True
+                await redis_client.aclose()
+                return payload
+            except json.JSONDecodeError:
+                # Corrupt cache entry — delete it so it doesn't keep being served
+                # for the full TTL. Leave redis_client open so the live-call result
+                # can be written back in step 4 below.
+                logger.warning("claude_health_redis_cache_corrupt")
+                try:
+                    await redis_client.delete(_REDIS_CACHE_KEY)
+                except Exception:
+                    pass
     except Exception as redis_err:
         logger.warning("claude_health_redis_read_failed", error=str(redis_err))
         if redis_client is not None:

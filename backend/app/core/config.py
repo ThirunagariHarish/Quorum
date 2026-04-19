@@ -10,12 +10,12 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = "minioadmin"
     MINIO_SECURE: bool = False
 
-    JWT_SECRET: str = "dev-jwt-secret-change-in-production"
+    JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
-    ENCRYPTION_KEY: str = "dev-encryption-key-32-bytes-long!"
+    ENCRYPTION_KEY: str
 
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""

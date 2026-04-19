@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -87,7 +88,9 @@ class SmallPaperAgent:
         bib_content = paper_result.get("bib_content", "")
 
         if tex_content:
-            compilation = self.latex.compile(tex_content, bib_content)
+            compilation = await asyncio.to_thread(
+                self.latex.compile, tex_content, bib_content
+            )
             paper_result["compilation"] = {
                 "success": compilation.success,
                 "errors": compilation.errors,

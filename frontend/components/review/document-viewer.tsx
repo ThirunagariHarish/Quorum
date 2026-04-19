@@ -16,22 +16,29 @@ export function DocumentViewer({ paperId, paperType }: DocumentViewerProps) {
   const [contentType, setContentType] = useState<string>("");
 
   useEffect(() => {
-    if (!paperId) {
-      setPreviewUrl(null);
-      return;
-    }
+    let cancelled = false;
+    (async () => {
+      if (!paperId) {
+        if (!cancelled) setPreviewUrl(null);
+        return;
+      }
 
-    setLoading(true);
-    api
-      .downloadPaper(paperId)
-      .then((res) => {
-        setPreviewUrl(res.download_url);
-        setContentType(
-          paperType === "blog" ? "text/markdown" : "application/pdf"
-        );
-      })
-      .catch(() => setPreviewUrl(null))
-      .finally(() => setLoading(false));
+      setLoading(true);
+      try {
+        const res = await api.downloadPaper(paperId);
+        if (!cancelled) {
+          setPreviewUrl(res.download_url);
+          setContentType(
+            paperType === "blog" ? "text/markdown" : "application/pdf"
+          );
+        }
+      } catch {
+        if (!cancelled) setPreviewUrl(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [paperId, paperType]);
 
   if (!paperId) {

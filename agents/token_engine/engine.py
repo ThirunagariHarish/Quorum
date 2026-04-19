@@ -87,11 +87,13 @@ class TokenBudgetEngine:
 
         if remaining_pct <= 0:
             return BudgetStatus.EXHAUSTED
-        if remaining_pct < 0.10:
+        # Use a small epsilon on each threshold to guard against IEEE 754 rounding
+        # (e.g. 1.0 - 9.0/10.0 == 0.09999999999999998 which is < 0.10 without epsilon).
+        if remaining_pct < (0.10 - 1e-9):
             return BudgetStatus.CRITICAL
-        if remaining_pct < 0.30:
+        if remaining_pct < (0.30 - 1e-9):
             return BudgetStatus.LOW
-        if remaining_pct < 0.70:
+        if remaining_pct < (0.70 - 1e-9):
             return BudgetStatus.WARNING
         return BudgetStatus.HEALTHY
 
@@ -163,7 +165,10 @@ class TokenBudgetEngine:
         else:
             raise RuntimeError(f"Unsupported LLM provider: {provider}")
 
-        actual_tier = router.tier_from_model(model)
+        # Use the tier already resolved at call-site rather than reverse-looking it up
+        # via tier_from_model(), which is ambiguous for models shared across tiers
+        # (e.g. OpenAI's gpt-4o-mini maps to both "standard" and "simple").
+        actual_tier = tier
 
         if agent_id:
             await self.tracker.track(

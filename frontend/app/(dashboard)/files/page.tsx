@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,11 +46,17 @@ export default function FilesPage() {
     if (statusFilter !== "all") params.status = statusFilter;
     if (typeFilter !== "all") params.paper_type = typeFilter;
 
-    setLoading(true);
-    api
-      .getPapers(params)
-      .then((res) => setPapers(res.items))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await api.getPapers(params);
+        if (!cancelled) setPapers(res.items);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [statusFilter, typeFilter]);
 
   const filtered = papers.filter((p) =>

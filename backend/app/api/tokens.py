@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Optional
+import calendar
+from typing import Literal, Optional
 
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 import structlog
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,6 +45,18 @@ async def get_token_usage(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    _GRANULARITY_MAP = {
+        "daily": "day",
+        "weekly": "week",
+        "monthly": "month",
+    }
+    if granularity not in _GRANULARITY_MAP:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported granularity '{granularity}'. Valid values: daily, weekly, monthly.",
+        )
+    trunc_unit = _GRANULARITY_MAP[granularity]
+
     if not start_date:
         start_date = date.today() - timedelta(days=30)
     if not end_date:
@@ -52,7 +65,7 @@ async def get_token_usage(
     start_dt = datetime(start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc)
     end_dt = datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=timezone.utc)
 
-    date_trunc = func.date_trunc("day", TokenUsageLog.created_at)
+    date_trunc = func.date_trunc(trunc_unit, TokenUsageLog.created_at)
 
     query = (
         select(
@@ -163,12 +176,27 @@ async def get_budget(
     monthly_limit = float(monthly_budget_str) if monthly_budget_str else None
 
     budget_status = "ok"
+    # Severity ranking used to pick the worse of daily vs monthly status.
+    _SEVERITY = {"ok": 0, "warning": 1, "exhausted": 2}
+
     if daily_limit:
         pct_used = daily_spent / daily_limit
         if pct_used >= 1.0:
             budget_status = "exhausted"
         elif pct_used >= 0.7:
             budget_status = "warning"
+
+    if monthly_limit:
+        monthly_pct_used = monthly_spent / monthly_limit
+        if monthly_pct_used >= 1.0:
+            monthly_status = "exhausted"
+        elif monthly_pct_used >= 0.7:
+            monthly_status = "warning"
+        else:
+            monthly_status = "ok"
+        # Promote to the more severe status if monthly is worse than daily.
+        if _SEVERITY[monthly_status] > _SEVERITY[budget_status]:
+            budget_status = monthly_status
 
     return BudgetResponse(
         daily_limit_usd=daily_limit,
@@ -223,7 +251,9 @@ async def get_forecast(
     db: AsyncSession = Depends(get_db),
 ):
     today = date.today()
-    week_ago = today - timedelta(days=7)
+    # timedelta(days=6) gives exactly 7 inclusive calendar days
+    # (week_ago .. today) when combined with the >= comparison below.
+    week_ago = today - timedelta(days=6)
 
     weekly_result = await db.execute(
         select(func.coalesce(func.sum(TokenUsageLog.cost_usd), 0)).where(
@@ -234,7 +264,7 @@ async def get_forecast(
     weekly_cost = float(weekly_result.scalar_one())
     daily_avg = weekly_cost / 7.0 if weekly_cost > 0 else 0
 
-    prev_week_start = today - timedelta(days=14)
+    prev_week_start = today - timedelta(days=13)
     prev_weekly_result = await db.execute(
         select(func.coalesce(func.sum(TokenUsageLog.cost_usd), 0)).where(
             TokenUsageLog.user_id == current_user.id,
@@ -252,9 +282,15 @@ async def get_forecast(
         elif change < -0.1:
             trend = "decreasing"
 
+    # Days remaining in the current calendar month (inclusive of today).
+    last_day_of_month = today.replace(
+        day=calendar.monthrange(today.year, today.month)[1]
+    )
+    days_remaining_in_month = (last_day_of_month - today).days + 1
+
     return ForecastResponse(
         forecast_30d_usd=round(daily_avg * 30, 2),
         daily_average_7d=round(daily_avg, 2),
         trend=trend,
-        projected_monthly=round(daily_avg * 30, 2),
+        projected_monthly=round(daily_avg * days_remaining_in_month, 2),
     )

@@ -95,6 +95,28 @@ class LaTeXCompiler:
             log_output = result.stdout + result.stderr
             errors = self.parse_errors(log_output)
 
+            # ── One-shot auto-fix retry ──────────────────────────────
+            if result.returncode != 0 and errors:
+                fixed_tex = self.attempt_auto_fix(processed, errors)
+                if fixed_tex is not None:
+                    tex_path.write_text(fixed_tex, encoding="utf-8")
+                    try:
+                        result = subprocess.run(
+                            [self.tectonic_path, "-X", "compile", str(tex_path)],
+                            capture_output=True,
+                            text=True,
+                            cwd=tmpdir,
+                            timeout=120,
+                        )
+                    except subprocess.TimeoutExpired:
+                        return CompilationResult(
+                            success=False,
+                            log="Compilation timed out after 120 seconds (retry)",
+                            errors=["timeout"],
+                        )
+                    log_output = result.stdout + result.stderr
+                    errors = self.parse_errors(log_output)
+
             pdf_path = tex_path.with_suffix(".pdf")
             if result.returncode == 0 and pdf_path.exists():
                 return CompilationResult(
@@ -163,7 +185,7 @@ class LaTeXCompiler:
             re.compile(r"(Float too large[^\n]*)", re.MULTILINE),
             # Missing figure file
             re.compile(r"(File `[^']+' not found)", re.MULTILINE),
-            re.compile(r"(Cannot find file `[^']+)", re.MULTILINE),
+            re.compile(r"(Cannot find file `[^'\n]+)", re.MULTILINE),
         ]
         errors: list[str] = []
         seen: set[str] = set()
@@ -278,11 +300,26 @@ class LaTeXCompiler:
 
     @staticmethod
     def _ensure_balance(content: str) -> str:
-        """Guarantee \\balance appears immediately before \\bibliographystyle."""
-        # If \balance is already present, do nothing
-        if re.search(r"\\balance\b", content):
-            return content
-        # Insert \balance on the line before \bibliographystyle
+        """Guarantee \\balance appears immediately before \\bibliographystyle.
+
+        Three cases:
+          1. No \\balance at all → inject before \\bibliographystyle.
+          2. \\balance exists AND precedes \\bibliographystyle/\\bibliography → nothing to do.
+          3. \\balance exists but is AFTER \\bibliographystyle/\\bibliography (misplaced)
+             → strip the stray \\balance and re-inject in the correct position.
+        """
+        balance_match = re.search(r"\\balance\b", content)
+        anchor_match = re.search(r"\\bibliographystyle\b|\\bibliography\b", content)
+
+        if balance_match:
+            if anchor_match and balance_match.start() > anchor_match.start():
+                # Misplaced — remove the stray \balance (including any trailing newline)
+                content = re.sub(r"\\balance\b\n?", "", content)
+            else:
+                # Correctly placed (or no bib anchor to compare against) — leave as-is
+                return content
+
+        # Insert \balance on the line immediately before \bibliographystyle
         return re.sub(
             r"(\\bibliographystyle\b)",
             r"\\balance\n\1",

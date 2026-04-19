@@ -129,7 +129,7 @@ async def create_agent_task(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Agent).where(Agent.id == agent_id))
+    result = await db.execute(select(Agent).where(Agent.id == agent_id).with_for_update())
     agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
@@ -152,6 +152,8 @@ async def create_agent_task(
     )
     db.add(task)
     await db.flush()
+    agent.status = "active"
+    agent.current_task_id = task.id
     await db.refresh(task)
 
     logger.info(

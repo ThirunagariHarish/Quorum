@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import TYPE_CHECKING, Any
@@ -63,6 +64,9 @@ class IEEEResearchAgent:
         logger.info("Generated %d research directions", len(directions))
 
         scout_results = await self.spawn_scouts(directions, reference_papers)
+        if not scout_results:
+            raise RuntimeError("All scout directions failed; cannot proceed with research.")
+
         top_directions = [
             d
             for d in scout_results
@@ -79,11 +83,14 @@ class IEEEResearchAgent:
         research_outputs = await self.spawn_researchers(
             top_directions, topic, reference_papers, target_venue
         )
+        if not research_outputs:
+            raise RuntimeError("All research directions failed; cannot assemble paper.")
 
         result = await self.assemble_paper(research_outputs)
 
         if result.get("tex_content"):
-            compilation = self.latex.compile(
+            compilation = await asyncio.to_thread(
+                self.latex.compile,
                 result["tex_content"],
                 result.get("bib_content"),
             )
@@ -125,6 +132,11 @@ class IEEEResearchAgent:
             agent_type=self.AGENT_TYPE,
             task_phase="ideation",
             prompt=prompt,
+            system_prompt=IEEE_SYSTEM_PROMPT.format(
+                topic=topic,
+                reference_papers=ref_summary,
+                target_venue=target_venue,
+            ),
             agent_id=self.agent_id,
         )
 
@@ -142,37 +154,50 @@ class IEEEResearchAgent:
         directions: list[str | dict],
         reference_papers: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        """Spawn Haiku sub-agents for quick feasibility assessment."""
-        results: list[dict[str, Any]] = []
+        """Spawn Haiku sub-agents for quick feasibility assessment (parallel)."""
         ref_summary = json.dumps(
             [{"title": p.get("title")} for p in reference_papers[:3]]
         )
+        system_prompt = IEEE_SYSTEM_PROMPT.format(
+            topic="",
+            reference_papers=ref_summary,
+            target_venue="",
+        )
 
-        for direction in directions:
+        async def _scout_direction(direction: str | dict) -> dict[str, Any]:
             direction_text = direction if isinstance(direction, str) else str(direction)
             prompt = IEEE_SCOUT_PROMPT.format(
                 reference_paper=ref_summary,
                 direction=direction_text,
             )
-
             result = await self.token_engine.execute_with_budget(
                 agent_type=self.AGENT_TYPE,
                 task_phase="scout",
                 prompt=prompt,
+                system_prompt=system_prompt,
                 agent_id=self.agent_id,
             )
-
             try:
                 scout_data = json.loads(result["text"])
                 scout_data["direction"] = direction_text
-                results.append(scout_data)
+                return scout_data
             except (json.JSONDecodeError, KeyError):
-                results.append({
+                return {
                     "direction": direction_text,
                     "feasibility_score": 5,
                     "recommended": True,
-                })
+                }
 
+        raw = await asyncio.gather(
+            *[_scout_direction(d) for d in directions],
+            return_exceptions=True,
+        )
+        results: list[dict[str, Any]] = []
+        for item in raw:
+            if isinstance(item, Exception):
+                logger.warning("Scout direction failed: %s", item)
+            else:
+                results.append(item)  # type: ignore[arg-type]
         return results
 
     async def spawn_researchers(
@@ -182,37 +207,49 @@ class IEEEResearchAgent:
         reference_papers: list[dict[str, Any]],
         target_venue: str,
     ) -> list[dict[str, Any]]:
-        """Spawn Sonnet sub-agents for full paper research per direction."""
-        outputs: list[dict[str, Any]] = []
+        """Spawn Sonnet sub-agents for full paper research per direction (parallel)."""
         ref_json = json.dumps(
             [{"title": p.get("title"), "doi": p.get("doi", "")} for p in reference_papers[:5]]
         )
+        system_prompt = IEEE_SYSTEM_PROMPT.format(
+            topic=topic,
+            reference_papers=ref_json,
+            target_venue=target_venue,
+        )
 
-        for direction_data in top_directions:
+        async def _research_direction(direction_data: dict[str, Any]) -> dict[str, Any]:
             direction = direction_data.get("direction", str(direction_data))
-
             prompt = IEEE_RESEARCH_PROMPT.format(
                 topic=topic,
                 direction=direction,
                 reference_papers=ref_json,
                 target_venue=target_venue,
             )
-
             result = await self.token_engine.execute_with_budget(
                 agent_type=self.AGENT_TYPE,
                 task_phase="full_research",
                 prompt=prompt,
+                system_prompt=system_prompt,
                 agent_id=self.agent_id,
                 max_tokens=8192,
             )
-
-            outputs.append({
+            return {
                 "direction": direction,
                 "content": result["text"],
                 "model": result["model"],
                 "tokens": result["input_tokens"] + result["output_tokens"],
-            })
+            }
 
+        raw = await asyncio.gather(
+            *[_research_direction(d) for d in top_directions],
+            return_exceptions=True,
+        )
+        outputs: list[dict[str, Any]] = []
+        for item in raw:
+            if isinstance(item, Exception):
+                logger.warning("Research direction failed: %s", item)
+            else:
+                outputs.append(item)  # type: ignore[arg-type]
         return outputs
 
     async def assemble_paper(
@@ -241,6 +278,11 @@ class IEEEResearchAgent:
             agent_type=self.AGENT_TYPE,
             task_phase="paper_assembly",
             prompt=prompt,
+            system_prompt=IEEE_SYSTEM_PROMPT.format(
+                topic="",
+                reference_papers="",
+                target_venue="",
+            ),
             agent_id=self.agent_id,
             max_tokens=8192,
         )

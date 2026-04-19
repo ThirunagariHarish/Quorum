@@ -7,9 +7,12 @@ from backend.app.core.config import settings
 
 def _get_fernet() -> Fernet:
     key = settings.ENCRYPTION_KEY.encode()
-    # Pad or hash to 32 bytes then base64-encode for Fernet compatibility
-    key_bytes = key.ljust(32, b"\0")[:32]
-    fernet_key = base64.urlsafe_b64encode(key_bytes)
+    if len(key) != 32:
+        raise ValueError(
+            f"ENCRYPTION_KEY must be exactly 32 bytes when UTF-8 encoded; "
+            f"got {len(key)} bytes. Set a valid 32-byte key in your environment."
+        )
+    fernet_key = base64.urlsafe_b64encode(key)
     return Fernet(fernet_key)
 
 

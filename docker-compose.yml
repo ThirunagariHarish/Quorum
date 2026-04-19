@@ -56,7 +56,7 @@ services:
       MINIO_SECRET_KEY: minioadmin
       MINIO_SECURE: "false"
       JWT_SECRET: dev-jwt-secret-change-in-production-please
-      ENCRYPTION_KEY: dev-encryption-key-32bytes!!
+      ENCRYPTION_KEY: dev-encryption-key-exactly-32byt
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}

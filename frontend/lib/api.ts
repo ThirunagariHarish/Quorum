@@ -150,7 +150,7 @@ class ApiClient {
 
   getReviews(params?: Record<string, string>) {
     const qs = params ? "?" + new URLSearchParams(params).toString() : "";
-    return this.request<PaginatedResponse<Review>>(`/reviews${qs}`);
+    return this.request<Review[]>(`/reviews${qs}`);
   }
 
   createReview(data: {
@@ -170,7 +170,7 @@ class ApiClient {
   }
 
   getReviewComments(reviewId: string) {
-    return this.request<{ items: Comment[] }>(`/reviews/${reviewId}/comments`);
+    return this.request<Comment[]>(`/reviews/${reviewId}/comments`);
   }
 
   addComment(
@@ -243,7 +243,7 @@ class ApiClient {
 
   getDeadlines(params?: Record<string, string>) {
     const qs = params ? "?" + new URLSearchParams(params).toString() : "";
-    return this.request<{ items: Deadline[] }>(`/deadlines${qs}`);
+    return this.request<Deadline[]>(`/deadlines${qs}`);
   }
 
   createDeadline(data: {
@@ -310,6 +310,17 @@ class ApiClient {
 
   healthCheck() {
     return this.request<{ status: string }>("/health");
+  }
+
+  // ── LaTeX Compile ─────────────────────────────────────────────────
+
+  compilePaper(paperId: string, tex: string, bib?: string): Promise<CompileResponse> {
+    const body: Record<string, string> = { tex_content: tex };
+    if (bib !== undefined) body.bib_content = bib;
+    return this.request<CompileResponse>(`/papers/${paperId}/compile`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
   }
 }
 
@@ -503,9 +514,10 @@ export default api;
 // ---------------------------------------------------------------------------
 
 export interface CompileResponse {
-  pdf_base64: string;
+  success: boolean;
+  pdf_b64: string | null;   // backend field name (was pdf_base64)
   errors: string[];
-  warnings: string[];
+  log: string;              // backend field name (was warnings)
 }
 
 export async function compilePaper(
@@ -513,17 +525,5 @@ export async function compilePaper(
   tex: string,
   bib?: string
 ): Promise<CompileResponse> {
-  const body: Record<string, string> = { tex };
-  if (bib !== undefined) body.bib = bib;
-  const res = await fetch(`/api/v1/papers/${paperId}/compile`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    credentials: "include",
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { detail?: string }).detail ?? `Compile failed: ${res.status}`);
-  }
-  return res.json() as Promise<CompileResponse>;
+  return api.compilePaper(paperId, tex, bib);
 }

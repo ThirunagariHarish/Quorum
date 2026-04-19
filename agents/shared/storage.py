@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 from typing import Any
@@ -45,9 +46,13 @@ class StorageService:
         data: bytes,
         content_type: str = "application/octet-stream",
     ) -> str:
-        stream = io.BytesIO(data)
-        self.client.put_object(
-            bucket, key, stream, length=len(data), content_type=content_type
+        await asyncio.to_thread(
+            self.client.put_object,
+            bucket,
+            key,
+            io.BytesIO(data),
+            len(data),
+            content_type=content_type,
         )
         logger.info("Uploaded %s/%s (%d bytes)", bucket, key, len(data))
         return f"{bucket}/{key}"
@@ -57,32 +62,41 @@ class StorageService:
     ) -> str:
         from datetime import timedelta
 
-        url = self.client.presigned_get_object(
-            bucket, key, expires=timedelta(seconds=expires)
+        url = await asyncio.to_thread(
+            self.client.presigned_get_object,
+            bucket,
+            key,
+            expires=timedelta(seconds=expires),
         )
         return url
 
     async def download_file(self, bucket: str, key: str) -> bytes:
-        response = self.client.get_object(bucket, key)
-        try:
-            return response.read()
-        finally:
-            response.close()
-            response.release_conn()
+        def _download() -> bytes:
+            response = self.client.get_object(bucket, key)
+            try:
+                return response.read()
+            finally:
+                response.close()
+                response.release_conn()
+
+        return await asyncio.to_thread(_download)
 
     async def delete_file(self, bucket: str, key: str) -> None:
-        self.client.remove_object(bucket, key)
+        await asyncio.to_thread(self.client.remove_object, bucket, key)
         logger.info("Deleted %s/%s", bucket, key)
 
     async def list_objects(
         self, bucket: str, prefix: str = ""
     ) -> list[dict[str, Any]]:
-        objects = self.client.list_objects(bucket, prefix=prefix, recursive=True)
-        return [
-            {
-                "key": obj.object_name,
-                "size": obj.size,
-                "last_modified": obj.last_modified.isoformat() if obj.last_modified else None,
-            }
-            for obj in objects
-        ]
+        def _list() -> list[dict[str, Any]]:
+            objects = self.client.list_objects(bucket, prefix=prefix, recursive=True)
+            return [
+                {
+                    "key": obj.object_name,
+                    "size": obj.size,
+                    "last_modified": obj.last_modified.isoformat() if obj.last_modified else None,
+                }
+                for obj in objects
+            ]
+
+        return await asyncio.to_thread(_list)
