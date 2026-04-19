@@ -20,26 +20,36 @@ export function PdfPreview({ pdfB64, isCompiling, errors }: PdfPreviewProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   // Convert base64 → Blob → object URL whenever pdfB64 changes.
-  // The cleanup function is the sole owner of URL revocation.
+  // localUrl tracks the created URL so the cleanup can always revoke it.
   useEffect(() => {
-    if (!pdfB64) {
-      setObjectUrl(null);
-      return;
-    }
+    let cancelled = false;
+    let localUrl: string | null = null;
 
-    try {
-      const binary = atob(pdfB64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      setObjectUrl(url);
-      return () => {
-        URL.revokeObjectURL(url); // sole revocation point
-      };
-    } catch {
-      setObjectUrl(null);
-    }
+    (async () => {
+      if (!pdfB64) {
+        if (!cancelled) setObjectUrl(null);
+        return;
+      }
+
+      try {
+        const binary = atob(pdfB64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        localUrl = URL.createObjectURL(blob);
+        if (!cancelled) {
+          setObjectUrl(localUrl);
+        }
+        // cleanup is the sole revocation point
+      } catch {
+        if (!cancelled) setObjectUrl(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (localUrl) URL.revokeObjectURL(localUrl); // sole revocation point
+    };
   }, [pdfB64]);
 
   const hasErrors = errors.length > 0;
@@ -51,9 +61,9 @@ export function PdfPreview({ pdfB64, isCompiling, errors }: PdfPreviewProps) {
         {objectUrl ? (
           <iframe
             src={objectUrl}
+            sandbox="allow-same-origin"
             className="w-full h-full border-0"
             title="PDF Preview"
-            sandbox=""
           />
         ) : !isCompiling && !hasErrors ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">

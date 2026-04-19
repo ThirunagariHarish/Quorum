@@ -7,7 +7,7 @@ import { DocumentViewer } from "@/components/review/document-viewer";
 import { CommentPanel } from "@/components/review/comment-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import type { Paper } from "@/lib/api";
+import api, { type Paper } from "@/lib/api";
 
 export default function ReviewPage() {
   const {
@@ -26,9 +26,18 @@ export default function ReviewPage() {
     fetchPendingPapers();
   }, [fetchPendingPapers]);
 
-  const handleSelect = (paper: Paper) => {
-    const reviewId = undefined; // Will be fetched from paper detail in real usage
-    setActivePaper(paper, reviewId);
+  const handleSelect = async (paper: Paper) => {
+    try {
+      const paperDetail = await api.getPaper(paper.id);
+      const sorted = [...(paperDetail.reviews ?? [])].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      const reviewId = sorted[0]?.id;
+      setActivePaper(paper, reviewId);
+    } catch {
+      // Fall back to setting paper without a reviewId so the viewer still loads
+      setActivePaper(paper, undefined);
+    }
   };
 
   const handleSubmitFeedback = async () => {

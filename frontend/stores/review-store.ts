@@ -40,7 +40,7 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   fetchComments: async (reviewId) => {
     try {
       const res = await api.getReviewComments(reviewId);
-      set({ comments: Array.isArray(res) ? res : res.items ?? [] });
+      set({ comments: res });
     } catch {
       /* empty */
     }

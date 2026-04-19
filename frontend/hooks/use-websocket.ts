@@ -13,6 +13,8 @@ export function useWebSocket() {
   const updateAgentStatus = useAgentStore((s) => s.updateAgentStatus);
   const updateTokenUsage = useTokenStore((s) => s.updateTokenUsage);
   const wsRef = useRef<WebSocket | null>(null);
+  const reconnectAttempts = useRef(0);
+  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
@@ -62,18 +64,38 @@ export function useWebSocket() {
 
   useEffect(() => {
     if (!token) return;
+    let alive = true;
 
-    const ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
-    wsRef.current = ws;
+    const connect = () => {
+      const ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
+      wsRef.current = ws;
 
-    ws.onmessage = handleMessage;
+      ws.onmessage = handleMessage;
 
-    ws.onclose = () => {
-      wsRef.current = null;
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      ws.onclose = () => {
+        wsRef.current = null;
+        if (alive && reconnectAttempts.current < 5) {
+          const delay = Math.min(1000 * 2 ** reconnectAttempts.current, 30000);
+          reconnectTimeout.current = setTimeout(() => {
+            reconnectAttempts.current++;
+            connect();
+          }, delay);
+        }
+      };
     };
 
+    reconnectAttempts.current = 0;
+    connect();
+
     return () => {
-      ws.close();
+      alive = false;
+      clearTimeout(reconnectTimeout.current);
+      reconnectAttempts.current = 0;
+      wsRef.current?.close();
       wsRef.current = null;
     };
   }, [token, handleMessage]);

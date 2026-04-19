@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,10 +46,16 @@ export default function DeadlinesPage() {
   const [formatNotes, setFormatNotes] = useState("");
 
   useEffect(() => {
-    api
-      .getDeadlines()
-      .then((res) => setDeadlines(Array.isArray(res) ? res : res.items ?? []))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.getDeadlines();
+        if (!cancelled) setDeadlines(res);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
